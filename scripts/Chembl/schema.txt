@@ -1,0 +1,237 @@
+================================================================================
+ChEMBL Database Schema - 정규화된 테이블 정의
+================================================================================
+
+작성일: 2025-12-25
+ChEMBL 버전: 36
+데이터 저장 위치: chembl-data/
+
+================================================================================
+1. COMPOUND 관련 테이블
+================================================================================
+
+[Table 1-1] compounds
+파일: chembl-data/compound/compounds.csv
+설명: 화합물 기본 정보
+Primary Key: chembl_id
+
+속성:
+- chembl_id      (string, PK, NOT NULL) - ChEMBL 화합물 고유 ID
+- name           (string, NULLABLE)     - 화합물 선호 이름
+- max_phase      (float, NULLABLE)      - 최대 임상 단계 (-1, 0.5, 1, 2, 3, 4)
+- first_approval (int, NULLABLE)        - 최초 승인 연도
+
+--------------------------------------------------------------------------------
+
+[Table 1-2] compound_structures
+파일: chembl-data/compound/compound_structures.csv
+설명: 화합물 화학 구조 정보 (1:1 관계)
+Primary Key: chembl_id
+Foreign Key: chembl_id → compounds.chembl_id
+
+속성:
+- chembl_id (string, PK/FK, NOT NULL) - ChEMBL 화합물 ID
+- smiles    (string, NULLABLE)        - SMILES 구조식
+- inchi_key (string, NULLABLE)        - InChI Key
+
+--------------------------------------------------------------------------------
+
+[Table 1-3] compound_synonyms
+파일: chembl-data/compound/compound_synonyms.csv
+설명: 화합물 동의어/이명 (1:N 관계)
+Foreign Key: chembl_id → compounds.chembl_id
+
+속성:
+- chembl_id    (string, FK, NOT NULL) - ChEMBL 화합물 ID
+- synonym      (string, NOT NULL)     - 동의어/이명
+- synonym_type (string, NULLABLE)     - 이명 타입 (TRADE_NAME, RESEARCH_CODE 등)
+
+관계:
+compounds 1 ──── 1 compound_structures
+compounds 1 ──── N compound_synonyms
+
+
+================================================================================
+2. DISEASE 관련 테이블
+================================================================================
+
+[Table 2-1] diseases
+파일: chembl-data/disease/disease_information.csv
+설명: 질병 정보 (MeSH 기반)
+Primary Key: mesh_id
+
+속성:
+- mesh_id      (string, PK, NOT NULL) - MeSH 질병 ID
+- mesh_heading (string, NOT NULL)     - MeSH 질병 이름
+- efo_id       (string, NULLABLE)     - EFO 온톨로지 ID
+- efo_term     (string, NULLABLE)     - EFO 용어
+
+관계:
+단일 테이블 (참조 관계 없음)
+
+
+================================================================================
+3. TARGET 관련 테이블
+================================================================================
+
+[Table 3-1] targets
+파일: chembl-data/target/targets.csv
+설명: 타겟(단백질) 기본 정보
+Primary Key: target_chembl_id
+
+속성:
+- target_chembl_id (string, PK, NOT NULL) - ChEMBL 타겟 고유 ID
+- target_name      (string, NULLABLE)     - 타겟 선호 이름
+- target_type      (string, NULLABLE)     - 타겟 타입 (SINGLE PROTEIN, PROTEIN FAMILY, CELL-LINE 등)
+- organism         (string, NULLABLE)     - 생물종 (Homo sapiens 등)
+- uniprot_id       (string, NULLABLE)     - UniProt Accession ID
+
+--------------------------------------------------------------------------------
+
+[Table 3-2] target_synonyms
+파일: chembl-data/target/target_synonyms.csv
+설명: 타겟 동의어/이명 (1:N 관계)
+Foreign Key: target_chembl_id → targets.target_chembl_id
+
+속성:
+- target_chembl_id (string, FK, NOT NULL) - ChEMBL 타겟 ID
+- synonym          (string, NOT NULL)     - 동의어/이명
+- synonym_type     (string, NOT NULL)     - 이명 타입 (GENE_SYMBOL, UNIPROT, EC_NUMBER, GENE_SYMBOL_OTHER)
+
+관계:
+targets 1 ──── N target_synonyms
+
+
+================================================================================
+4. COMPOUND-DISEASE 관계 테이블
+================================================================================
+
+[Table 4-1] compound_disease_relationships
+파일: chembl-data/compound-disease/compound-disease_information.csv
+설명: 화합물-질병 적응증(Drug Indication) 관계
+Foreign Keys:
+  - drug_chembl_id → compounds.chembl_id
+  - mesh_id → diseases.mesh_id
+
+속성:
+- drug_chembl_id (string, FK, NOT NULL) - 화합물 ChEMBL ID
+- mesh_id        (string, FK, NOT NULL) - 질병 MeSH ID
+- max_phase      (float, NULLABLE)      - 해당 적응증의 최대 임상 단계
+
+특징:
+- 중복 제거됨: 동일 drug-disease 쌍에서 max_phase가 가장 높은 것만 유지
+- 총 ~55,025개의 유니크한 drug-disease 관계
+- 희소성(Sparsity): ~99.5%
+
+관계:
+compounds N ──── M diseases (다대다 관계)
+
+
+================================================================================
+5. COMPOUND-TARGET 관계 테이블
+================================================================================
+
+[Table 5-1] compound_target_bioactivities
+파일: chembl-data/compound-target/compound-target_information.csv
+설명: 화합물-타겟 생물학적 활성 데이터 (실험 측정값)
+Foreign Keys:
+  - drug_chembl_id → compounds.chembl_id
+  - target_chembl_id → targets.target_chembl_id
+
+속성:
+- drug_chembl_id    (string, FK, NOT NULL) - 화합물 ChEMBL ID
+- target_chembl_id  (string, FK, NOT NULL) - 타겟 ChEMBL ID
+- standard_type     (string, NULLABLE)     - 활성 측정 타입 (IC50, Ki, EC50, Inhibition 등)
+- standard_relation (string, NULLABLE)     - 관계 연산자 (=, <, >, <=, >=)
+- standard_value    (float, NULLABLE)      - 측정값
+- standard_units    (string, NULLABLE)     - 단위 (nM, uM 등)
+- pchembl_value     (float, NULLABLE)      - 표준화된 활성값 (-log10(molar IC50/Ki/EC50))
+- confidence_score  (int, NULLABLE)        - 신뢰도 점수 (0-9, 9가 가장 높음)
+- assay_description (string, NULLABLE)     - 실험 방법 설명
+
+특징:
+- 총 ~25.5M 개의 bioactivity 레코드
+- 파일 크기: ~7.6GB
+- 모든 실험 데이터 포함 (검증된 MoA뿐만 아니라 모든 측정값)
+- 정규화: target 속성 정보(target_name, target_type, organism, uniprot_id)는
+  targets 테이블을 참조하도록 제거됨
+
+참고:
+- organism 정보가 필요한 경우 targets 테이블과 JOIN
+- pchembl_value가 높을수록 강한 결합력 (일반적으로 5 이상이 활성)
+- confidence_score가 높을수록 신뢰도 높음 (9 = 문헌의 단일 단백질 직접 실험)
+
+관계:
+compounds N ──── M targets (다대다 관계, 실험 측정값 포함)
+
+
+================================================================================
+6. 전체 ERD 개요
+================================================================================
+
+[Entity Relationships]
+
+compounds ──┬── compound_structures (1:1)
+            ├── compound_synonyms (1:N)
+            ├── compound_disease_relationships (N:M) ──── diseases
+            └── compound_target_bioactivities (N:M) ──── targets ──── target_synonyms (1:N)
+
+
+================================================================================
+7. 데이터 통계
+================================================================================
+
+[기본 엔티티]
+compounds:           ~2,878,135 rows
+compound_structures: ~2,878,135 rows
+compound_synonyms:   ~132,937 rows
+
+diseases:            2,804 rows (unique MeSH IDs)
+
+targets:             21,581 rows
+target_synonyms:     146,355 rows
+
+[관계 테이블]
+compound-disease:    ~55,025 unique pairs (중복 제거 후)
+compound-target:     ~25,590,440 bioactivity records
+
+
+================================================================================
+8. 주요 참고사항
+================================================================================
+
+[Primary Key 규칙]
+- compounds: chembl_id (예: CHEMBL25)
+- diseases: mesh_id (예: D001172)
+- targets: target_chembl_id (예: CHEMBL203)
+
+[Foreign Key 규칙]
+- compound-disease 테이블의 drug_chembl_id는 compounds.chembl_id 참조
+- compound-target 테이블의 drug_chembl_id는 compounds.chembl_id 참조
+- compound-target 테이블의 target_chembl_id는 targets.target_chembl_id 참조
+
+[컬럼명 규칙]
+- 모든 컬럼명은 snake_case 사용 (예: chembl_id, max_phase, target_chembl_id)
+- ChEMBL ID 컬럼은 맥락에 따라 drug_chembl_id 또는 chembl_id로 명명
+
+[NULL 처리]
+- Python None으로 변환되어 CSV에 빈 문자열로 저장됨
+- Primary Key는 NOT NULL 보장됨
+
+[데이터 품질]
+- 모든 ID 필드는 원본 DB에서 NOT NULL 제약조건으로 추출
+- 구조 정보(SMILES, InChI)는 일부 화합물에서 누락 가능
+- UniProt ID는 타겟 타입에 따라 누락 가능 (CELL-LINE, UNCHECKED 등)
+- pchembl_value는 표준화 가능한 활성 측정값에만 존재
+
+[정규화 원칙]
+- 중복 데이터 제거: target 정보는 targets 테이블에만 저장
+- 관계 테이블에는 FK와 관계 속성(relationship attributes)만 저장
+- 필요 시 JOIN으로 전체 정보 조회
+
+[데이터 희소성]
+- compound-disease 관계 행렬: ~99.5% sparse
+- compound-target 관계 행렬: >99.9% sparse
+- 대부분의 가능한 조합은 실험되지 않음
+
+================================================================================
