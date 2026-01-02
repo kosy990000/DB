@@ -1,0 +1,5 @@
+# KEGG Pathway Processing Configuration
+
+# Data directories
+kgml_dir: "data-human/kgml_hsa"
+output_dir: "data-human/human_pathway_edges"
