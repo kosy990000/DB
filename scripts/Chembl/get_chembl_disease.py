@@ -44,9 +44,7 @@ def extract_chembl_diseases(db_path, output_dir):
     query = """
         SELECT DISTINCT
             mesh_id AS mesh_id,
-            mesh_heading AS mesh_heading,
-            efo_id AS efo_id,
-            efo_term AS efo_term
+            mesh_heading AS mesh_heading
         FROM
             drug_indication
         WHERE

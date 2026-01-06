@@ -1,0 +1,335 @@
+// Use DBML to define your database structure
+// Docs: https://dbml.dbdiagram.io/docs
+// Updated: 2026-01-05
+// Based on processed_analysis_filtered.json
+
+// ============================================
+// Taxon - Species Database (중앙 참조 테이블)
+// ============================================
+
+Table taxon {
+  taxon_id integer [pk, note: '542 species - NCBI Taxonomy ID']
+  species varchar [null, note: 'Common name (only for human/mouse)']
+  scientific_name varchar [not null, note: 'Scientific name']
+}
+
+// ============================================
+// ChEMBL - Compound Database
+// ============================================
+
+Table chembl_compounds {
+  chembl_id varchar [pk, note: '2,878,135 compounds']
+  name varchar [null, note: '98.29% null']
+  max_phase float [null, note: '99.33% null, clinical phase 0-4']
+  first_approval float [null, note: '99.87% null']
+  smiles varchar [null, note: '0.81% null']
+  inchi_key varchar [null, note: '0.81% null, INDEX용 - FK 불가']
+
+  indexes {
+    inchi_key [name: 'idx_chembl_compounds_inchi_key', note: 'JOIN용']
+  }
+}
+
+Table chembl_synonyms {
+  chembl_id varchar [not null, ref: > chembl_compounds.chembl_id]
+  synonym varchar [not null]
+  synonym_type varchar [not null, note: '18 types']
+
+  indexes {
+    chembl_id [name: 'idx_chembl_synonyms_chembl_id']
+  }
+}
+
+Table chembl_diseases {
+  mesh_id varchar [pk, note: '2,178 diseases']
+  mesh_heading varchar [not null]
+  efo_id varchar [null, note: '2.78% null']
+  efo_term varchar [null, note: '2.78% null']
+
+  indexes {
+    mesh_id [name: 'idx_chembl_diseases_mesh_id']
+    efo_id [name: 'idx_chembl_diseases_efo_id']
+  }
+}
+
+Table chembl_targets {
+  target_chembl_id varchar [pk, note: '17,803 targets']
+  target_name varchar [not null]
+  target_type varchar [not null, note: '25 types']
+  species varchar [null, note: '1.15% null, 2,833 species']
+  uniprot_id varchar [null, note: '22.73% null - INDEX용, FK 불가']
+
+  indexes {
+    target_chembl_id [name: 'idx_chembl_targets_target_chembl_id']
+    uniprot_id [name: 'idx_chembl_targets_uniprot_id', note: 'JOIN용']
+  }
+}
+
+Table chembl_target_synonyms {
+  target_chembl_id varchar [not null, ref: > chembl_targets.target_chembl_id]
+  synonym varchar [null, note: '0.01% null']
+  synonym_type varchar [not null, note: '4 types']
+
+  indexes {
+    target_chembl_id [name: 'idx_chembl_target_synonyms_target_chembl_id']
+  }
+}
+
+Table chembl_drug_disease_relations {
+  drug_chembl_id varchar [not null, ref: > chembl_compounds.chembl_id]
+  mesh_id varchar [not null, ref: > chembl_diseases.mesh_id]
+  max_phase float [not null]
+
+  indexes {
+    drug_chembl_id [name: 'idx_chembl_drug_disease_drug_chembl_id']
+    mesh_id [name: 'idx_chembl_drug_disease_mesh_id']
+  }
+}
+
+Table chembl_drug_target_relations {
+  drug_chembl_id varchar [not null, ref: > chembl_compounds.chembl_id]
+  target_chembl_id varchar [not null, ref: > chembl_targets.target_chembl_id]
+  standard_type varchar [null]
+  standard_relation varchar [null, note: '=, >, <, etc']
+  standard_value float [null]
+  standard_unit varchar [null, note: 'nM, uM, etc']
+  pchembl_value float [null, note: '79.82% null']
+  confidence_score integer [not null, note: '0-9']
+  assay_description varchar [not null]
+
+  indexes {
+    drug_chembl_id [name: 'idx_chembl_drug_target_drug_chembl_id']
+    target_chembl_id [name: 'idx_chembl_drug_target_target_chembl_id']
+    pchembl_value [name: 'idx_chembl_drug_target_pchembl_value']
+  }
+}
+
+// ============================================
+// UniProt - Protein Database (중앙 연결점)
+// ============================================
+
+Table uniprot {
+  uniprot_id varchar [pk, note: '248,265 proteins']
+  gene_symbol varchar [not null, note: 'INDEX용 - PK 아님']
+  taxon_id integer [not null, ref: > taxon.taxon_id, note: '2 species']
+  species varchar [not null, note: 'human/mouse']
+
+  indexes {
+    uniprot_id [name: 'idx_uniprot_uniprot_id']
+    taxon_id [name: 'idx_uniprot_taxon_id']
+    gene_symbol [name: 'idx_uniprot_gene_symbol', note: 'JOIN용']
+  }
+}
+
+// ============================================
+// DrugBank - Drug Database
+// ============================================
+
+Table drugbank_drugs {
+  drugbank_id varchar [pk, note: '17,430 drugs']
+  name varchar [not null]
+  type varchar [not null, note: '2 types']
+  cas_number varchar [null, note: '38.23% null']
+  groups varchar [not null, note: 'approved, experimental, etc']
+  smiles varchar [null, note: '29.36% null']
+  inchi_key varchar [null, note: '29.34% null - INDEX용, FK 불가']
+  description varchar [null, note: '42.48% null']
+
+  indexes {
+    inchi_key [name: 'idx_drugbank_drugs_inchi_key', note: 'JOIN용']
+  }
+}
+
+Table drugbank_targets {
+  uniprot_id varchar [pk, ref: - uniprot.uniprot_id, note: 'FK to uniprot']
+  gene_symbol varchar [null, note: '7.75% null']
+  organism varchar [not null]
+  taxon_id integer [null, ref: > taxon.taxon_id, note: '0.26% null']
+  target_name varchar [not null]
+
+  indexes {
+    taxon_id [name: 'idx_drugbank_targets_taxon_id']
+  }
+}
+
+Table drugbank_drug_target_relations {
+  drugbank_id varchar [not null, ref: > drugbank_drugs.drugbank_id]
+  uniprot_id varchar [not null, ref: > drugbank_targets.uniprot_id]
+  actions varchar [null, note: '41.47% null']
+  known_action varchar [not null, note: 'yes/no/unknown']
+
+  indexes {
+    drugbank_id [name: 'idx_drugbank_drug_target_drugbank_id']
+    uniprot_id [name: 'idx_drugbank_drug_target_uniprot_id']
+  }
+}
+
+// ============================================
+// PubChem - Compound Database
+// ============================================
+
+Table pubchem_compounds {
+  cid integer [pk, note: '123,429,971 compounds']
+  inchi_key varchar [null, note: '3 nulls, 40만개 중복 - INDEX용, FK 불가']
+  smiles varchar [not null]
+  title varchar [not null]
+
+  indexes {
+    inchi_key [name: 'idx_pubchem_compounds_inchi_key', note: 'JOIN용']
+  }
+}
+
+Table pubchem_compound_synonyms {
+  cid integer [not null, ref: > pubchem_compounds.cid]
+  synonym varchar [not null]
+
+  indexes {
+    cid [name: 'idx_pubchem_compound_synonyms_cid']
+  }
+}
+
+// ============================================
+// NCBI Gene - Gene Database (중앙 연결점)
+// ============================================
+
+Table ncbi_info {
+  entrez_id integer [pk, note: '305,972 genes']
+  taxon_id integer [not null, ref: > taxon.taxon_id]
+  species varchar [not null, note: 'human/mouse']
+  gene_symbol varchar [not null, note: 'INDEX용 - PK 아님']
+  description varchar [not null]
+  gene_type varchar [not null, note: '11 types']
+
+  indexes {
+    taxon_id [name: 'idx_ncbi_info_taxon_id']
+    gene_symbol [name: 'idx_ncbi_info_gene_symbol', note: 'JOIN용']
+  }
+}
+
+Table ncbi_synonyms {
+  entrez_id integer [not null, ref: > ncbi_info.entrez_id]
+  taxon_id integer [not null, ref: > taxon.taxon_id]
+  species varchar [not null]
+  synonym varchar [null, note: '3 nulls']
+
+  indexes {
+    entrez_id [name: 'idx_ncbi_synonyms_entrez_id']
+    taxon_id [name: 'idx_ncbi_synonyms_taxon_id']
+  }
+}
+
+Table ncbi_ensembl {
+  entrez_id integer [pk, ref: - ncbi_info.entrez_id]
+  taxon_id integer [not null, ref: > taxon.taxon_id]
+  species varchar [not null]
+  ensembl_id varchar [not null, note: 'INDEX용 - Reactome JOIN']
+
+  indexes {
+    taxon_id [name: 'idx_ncbi_ensembl_taxon_id']
+    ensembl_id [name: 'idx_ncbi_ensembl_ensembl_id', note: 'JOIN용']
+  }
+}
+
+// ============================================
+// KEGG Pathway
+// ============================================
+
+Table kegg_pathway {
+  pathway_id varchar [pk, note: '734 pathways']
+  pathway_number integer [not null]
+  organism varchar [not null]
+  taxon_id integer [not null, ref: > taxon.taxon_id]
+  species varchar [not null]
+  pathway_name varchar [not null]
+  link varchar [unique, not null]
+
+  indexes {
+    taxon_id [name: 'idx_kegg_pathway_taxon_id']
+  }
+}
+
+// ============================================
+// Reactome Pathway
+// ============================================
+
+Table reactome_pathway {
+  reactome_pathway_id varchar [pk, note: '23,219 pathways']
+  pathway_name varchar [not null]
+  organism varchar [not null]
+}
+
+Table reactome_pathway_genes {
+  reactome_pathway_id varchar [not null, ref: > reactome_pathway.reactome_pathway_id]
+  ensembl_id varchar [not null, note: 'INDEX용 - ncbi_ensembl JOIN']
+  organism varchar [not null]
+
+  indexes {
+    reactome_pathway_id [name: 'idx_reactome_pathway_genes_reactome_pathway_id']
+    ensembl_id [name: 'idx_reactome_pathway_genes_ensembl_id', note: 'JOIN용']
+  }
+}
+
+// ============================================
+// DB 간 연결 (INDEX JOIN - 주석으로만 표시)
+// ============================================
+// 아래 관계들은 FK가 아니므로 Ref로 표시하지 않음
+// 애플리케이션에서 INDEX + JOIN으로 연결 가능
+
+// 1. Gene → Pathway 연결 (강함 ⭐⭐⭐)
+//    ncbi_ensembl.ensembl_id ⟿ reactome_pathway_genes.ensembl_id
+
+// 2. Protein → ChEMBL Target 연결 (중간 ⭐⭐ - 22% NULL)
+//    uniprot.uniprot_id ⟿ chembl_targets.uniprot_id
+
+// 3. Compound 간 InChI Key 연결 (약함 ⭐ - NULL, 중복)
+//    chembl_compounds.inchi_key ⟿ drugbank_drugs.inchi_key
+//    chembl_compounds.inchi_key ⟿ pubchem_compounds.inchi_key
+
+// ============================================
+// 연결 경로 요약
+// ============================================
+
+// [각 DB 내부 FK 연결]
+// ChEMBL:
+//   - chembl_compounds → chembl_synonyms (1:N)
+//   - chembl_compounds → chembl_drug_disease_relations (1:N)
+//   - chembl_compounds → chembl_drug_target_relations (1:N)
+//   - chembl_diseases → chembl_drug_disease_relations (1:N)
+//   - chembl_targets → chembl_target_synonyms (1:N)
+//   - chembl_targets → chembl_drug_target_relations (1:N)
+//
+// DrugBank:
+//   - drugbank_drugs → drugbank_drug_target_relations (1:N)
+//   - drugbank_targets → drugbank_drug_target_relations (1:N)
+//   - uniprot ↔ drugbank_targets (1:1 FK)
+//
+// PubChem:
+//   - pubchem_compounds → pubchem_compound_synonyms (1:N)
+//
+// NCBI:
+//   - ncbi_info → ncbi_synonyms (1:N)
+//   - ncbi_info ↔ ncbi_ensembl (1:1 FK)
+//
+// Reactome:
+//   - reactome_pathway → reactome_pathway_genes (1:N)
+
+// [DB 간 분석 경로]
+// 1. Gene → Pathway:
+//    ncbi_info (entrez_id) → ncbi_ensembl (ensembl_id) ⟿ reactome_pathway_genes → reactome_pathway
+//
+// 2. Protein → DrugBank Drug:
+//    uniprot (uniprot_id) = drugbank_targets (uniprot_id) → drugbank_drug_target_relations → drugbank_drugs
+//
+// 3. Protein → ChEMBL Compound:
+//    uniprot (uniprot_id) ⟿ chembl_targets (uniprot_id, 22% NULL) → chembl_drug_target_relations → chembl_compounds
+//
+// 4. Compound 매칭 (확률적):
+//    chembl_compounds (inchi_key) ⟿ drugbank_drugs (inchi_key) ⟿ pubchem_compounds (inchi_key)
+//
+// 5. Gene Symbol 매칭:
+//    uniprot (gene_symbol) ⟿ ncbi_info (gene_symbol) ⟿ drugbank_targets (gene_symbol)
+//
+// 범례:
+//   → : FK 관계 (강함)
+//   = : 동일 PK (매우 강함)
+//   ⟿ : INDEX JOIN (중간~약함)
