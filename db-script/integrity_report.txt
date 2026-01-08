@@ -1,0 +1,283 @@
+================================================================================
+Database Integrity Check Report
+================================================================================
+Database: /data/project/shinyoung/DB/database/database.db
+Start time: 2026-01-08 15:21:55
+================================================================================
+
+[INFO] Found 57 queries to execute
+
+  check_name                         | count
+  -----------------------------------+------
+  ChEMBL Synonyms - Orphaned Records | 0    
+
+  check_name                                        | count
+  --------------------------------------------------+------
+  ChEMBL Target Uniprot Mappings - Orphaned Records | 0    
+
+  check_name                                | count
+  ------------------------------------------+------
+  ChEMBL Target Synonyms - Orphaned Records | 0    
+
+  check_name                                   | count
+  ---------------------------------------------+------
+  ChEMBL Drug-Disease Relations - Missing Drug | 0    
+
+  check_name                                      | count
+  ------------------------------------------------+------
+  ChEMBL Drug-Disease Relations - Missing Disease | 0    
+
+  check_name                                  | count
+  --------------------------------------------+------
+  ChEMBL Drug-Target Relations - Missing Drug | 0    
+
+  check_name                                    | count
+  ----------------------------------------------+------
+  ChEMBL Drug-Target Relations - Missing Target | 0    
+
+  check_name                                    | count
+  ----------------------------------------------+------
+  DrugBank Drug-Target Relations - Missing Drug | 0    
+
+  check_name                                      | count
+  ------------------------------------------------+------
+  DrugBank Drug-Target Relations - Missing Target | 0    
+
+  check_name                       | count
+  ---------------------------------+------
+  DrugBank Targets - Invalid Taxon | 0    
+
+  check_name                          | count
+  ------------------------------------+------
+  PubChem Synonyms - Orphaned Records | 0    
+
+  check_name                   | count
+  -----------------------------+------
+  KEGG Pathway - Invalid Taxon | 0    
+
+  check_name                | count
+  --------------------------+------
+  KEGG Genes - Missing NCBI | 0    
+
+  check_name                            | count
+  --------------------------------------+------
+  KEGG Gene Synonyms - Orphaned Records | 0    
+
+  check_name                                | count
+  ------------------------------------------+------
+  KEGG Compound Synonyms - Orphaned Records | 0    
+
+  check_name                       | count
+  ---------------------------------+------
+  KEGG Edges - Missing Source Node | 3636 
+  ⚠️  WARNING: Found 3636 issues!
+
+  check_name                       | count
+  ---------------------------------+------
+  KEGG Edges - Missing Target Node | 4135 
+  ⚠️  WARNING: Found 4135 issues!
+
+  check_name                   | count
+  -----------------------------+------
+  KEGG Edges - Missing Pathway | 0    
+
+  check_name                              | count
+  ----------------------------------------+------
+  KEGG Gene Group Members - Missing Group | 0    
+
+  check_name                               | count
+  -----------------------------------------+------
+  KEGG Gene Group Members - Missing Member | 0    
+
+  check_name                | count
+  --------------------------+------
+  NCBI Info - Invalid Taxon | 0    
+
+  check_name                       | count
+  ---------------------------------+------
+  NCBI Synonyms - Orphaned Records | 0    
+
+  check_name                    | count
+  ------------------------------+------
+  NCBI Synonyms - Invalid Taxon | 0    
+
+  check_name                      | count
+  --------------------------------+------
+  NCBI Ensembl - Orphaned Records | 0    
+
+  check_name                   | count
+  -----------------------------+------
+  NCBI Ensembl - Invalid Taxon | 0    
+
+  check_name                               | count
+  -----------------------------------------+------
+  Reactome Pathway Genes - Missing Pathway | 0    
+
+  check_name              | count
+  ------------------------+------
+  UniProt - Invalid Taxon | 0    
+
+  check_name                   | count
+  -----------------------------+------
+  Taxon - NULL scientific_name | 0    
+
+  check_name                        | count
+  ----------------------------------+------
+  ChEMBL Compounds - NULL chembl_id | 0    
+
+  check_name                        | count
+  ----------------------------------+------
+  ChEMBL Targets - NULL target_name | 0    
+
+  check_name                        | count
+  ----------------------------------+------
+  ChEMBL Targets - NULL target_type | 0    
+
+  check_name                          | count
+  ------------------------------------+------
+  ChEMBL Diseases - NULL mesh_heading | 0    
+
+  check_name                 | count
+  ---------------------------+------
+  DrugBank Drugs - NULL name | 0    
+
+  check_name                 | count
+  ---------------------------+------
+  DrugBank Drugs - NULL type | 0    
+
+  check_name                   | count
+  -----------------------------+------
+  NCBI Info - NULL gene_symbol | 0    
+
+  check_name                   | count
+  -----------------------------+------
+  NCBI Info - NULL description | 0    
+
+  check_name                 | count
+  ---------------------------+------
+  UniProt - NULL gene_symbol | 0    
+
+  check_name             | count
+  -----------------------+------
+  UniProt - NULL species | 0    
+
+  check_name           | count
+  ---------------------+------
+  Taxon - Duplicate PK | 0    
+
+  check_name                      | count
+  --------------------------------+------
+  ChEMBL Compounds - Duplicate PK | 0    
+
+  check_name                    | count
+  ------------------------------+------
+  ChEMBL Targets - Duplicate PK | 0    
+
+  check_name                    | count
+  ------------------------------+------
+  DrugBank Drugs - Duplicate PK | 0    
+
+  check_name               | count
+  -------------------------+------
+  NCBI Info - Duplicate PK | 0    
+
+  check_name                                      | count
+  ------------------------------------------------+------
+  UniProt to ChEMBL Target - Unmapped UniProt IDs | 4656 
+  ⚠️  WARNING: Found 4656 issues!
+
+  check_name                              | count 
+  ----------------------------------------+-------
+  NCBI to Reactome - Unmapped Ensembl IDs | 315158
+  ⚠️  WARNING: Found 315158 issues!
+
+  check_name                            | count
+  --------------------------------------+------
+  UniProt - Species mismatch with taxon | 0    
+
+  check_name                         | count
+  -----------------------------------+------
+  NCBI - Species mismatch with taxon | 0    
+
+  check_name                    | count
+  ------------------------------+------
+  KEGG Genes - Invalid organism | 0    
+
+  check_name                      | count
+  --------------------------------+------
+  KEGG Pathway - Invalid organism | 0    
+
+
+================================================================================
+Row Count Summary
+================================================================================
+
+  table_name                     | row_count
+  -------------------------------+----------
+  taxon                          | 542      
+  chembl_compounds               | 2878135  
+  chembl_targets                 | 17803    
+  chembl_target_uniprot_mappings | 16675    
+  chembl_diseases                | 2178     
+  chembl_synonyms                | 132937   
+  chembl_target_synonyms         | 146355   
+  chembl_drug_disease_relations  | 55025    
+  chembl_drug_target_relations   | 24267312 
+  drugbank_drugs                 | 17430    
+  drugbank_targets               | 4917     
+  drugbank_drug_target_relations | 22801    
+  pubchem_compounds              | 123429971
+  pubchem_compound_synonyms      | 114675840
+  kegg_pathway                   | 734      
+  kegg_genes                     | 50809    
+  kegg_compounds                 | 19569    
+  kegg_gene_synonyms             | 166044   
+  kegg_compound_synonyms         | 33246    
+  kegg_nodes                     | 75861    
+  kegg_edges                     | 43139    
+  kegg_gene_group_members        | 25885    
+  ncbi_info                      | 305974   
+  ncbi_synonyms                  | 150879   
+  ncbi_ensembl                   | 73400    
+  reactome_pathway               | 23219    
+  reactome_pathway_genes         | 3550105  
+  uniprot                        | 248430   
+
+
+================================================================================
+Empty Tables Check
+================================================================================
+
+  check_name                      | count
+  --------------------------------+------
+  Invalid IDs - Negative taxon_id | 0    
+
+  check_name                       | count
+  ---------------------------------+------
+  Invalid IDs - Negative entrez_id | 0    
+
+  check_name                 | count
+  ---------------------------+------
+  Invalid IDs - Negative cid | 0    
+
+  check_name                           | count
+  -------------------------------------+------
+  ChEMBL Compounds - Invalid max_phase | 2530 
+  ⚠️  WARNING: Found 2530 issues!
+
+  check_name                                              | count
+  --------------------------------------------------------+------
+  ChEMBL Drug-Target Relations - Invalid confidence_score | 0    
+
+
+================================================================================
+Summary
+================================================================================
+Total queries executed: 57
+Query errors: 0
+Total issues found: 5
+Elapsed time: 65.01s
+End time: 2026-01-08 15:23:00
+================================================================================
+
+⚠️  Found 5 integrity issues. Please review the report above.

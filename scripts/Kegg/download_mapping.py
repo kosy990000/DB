@@ -67,7 +67,8 @@ def download_gene_list(organism_code, organism_name):
             if gene_names:
                 for synonym in gene_names.split(','):
                     synonym = synonym.strip()
-                    if synonym:
+                    # Filter out empty strings and invalid values (NaN, NA, N/A, -, etc.)
+                    if synonym and synonym.lower() not in ['nan', 'na', 'n/a', '-', 'null', 'none']:
                         synonym_data.append({
                             'gene_id': gene_id,
                             'entrez_id': entrez_id,
@@ -144,7 +145,9 @@ def download_compound_list():
 
             # Add all names to synonym_data
             for name in compound_names:
-                if name:
+                name = name.strip()
+                # Filter out empty strings and invalid values (NaN, NA, N/A, -, etc.)
+                if name and name.lower() not in ['nan', 'na', 'n/a', '-', 'null', 'none']:
                     synonym_data.append({
                         'compound_id': compound_id,
                         'synonym': name

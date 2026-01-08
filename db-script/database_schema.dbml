@@ -1,7 +1,14 @@
 // Use DBML to define your database structure
 // Docs: https://dbml.dbdiagram.io/docs
-// Updated: 2026-01-05
-// Based on processed_analysis_filtered.json
+// Updated: 2026-01-08
+// Based on database_schema.sql
+//
+// Changes:
+// - ChEMBL: Normalized chembl_targets (removed uniprot_id, added chembl_target_uniprot_mappings)
+// - ChEMBL: Removed efo_id/efo_term from chembl_diseases
+// - KEGG: Added full pathway network (genes, compounds, nodes, edges, gene_groups)
+// - NCBI: Added 2 genes via API (entrez_id: 139352146, 108168726)
+// - GO: Added Gene Ontology tables (go_terms, go_hierarchy, go_genes)
 
 // ============================================
 // Taxon - Species Database (중앙 참조 테이블)
@@ -43,25 +50,22 @@ Table chembl_synonyms {
 Table chembl_diseases {
   mesh_id varchar [pk, note: '2,178 diseases']
   mesh_heading varchar [not null]
-  efo_id varchar [null, note: '2.78% null']
-  efo_term varchar [null, note: '2.78% null']
-
-  indexes {
-    mesh_id [name: 'idx_chembl_diseases_mesh_id']
-    efo_id [name: 'idx_chembl_diseases_efo_id']
-  }
 }
 
 Table chembl_targets {
-  target_chembl_id varchar [pk, note: '17,803 targets']
+  target_chembl_id varchar [pk, note: '17,803 targets (normalized)']
   target_name varchar [not null]
   target_type varchar [not null, note: '25 types']
   species varchar [null, note: '1.15% null, 2,833 species']
-  uniprot_id varchar [null, note: '22.73% null - INDEX용, FK 불가']
+}
+
+Table chembl_target_uniprot_mappings {
+  target_chembl_id varchar [not null, ref: > chembl_targets.target_chembl_id, note: '1:N relationship']
+  uniprot_id varchar [not null, note: '16,675 mappings, 12,904 unique targets']
 
   indexes {
-    target_chembl_id [name: 'idx_chembl_targets_target_chembl_id']
-    uniprot_id [name: 'idx_chembl_targets_uniprot_id', note: 'JOIN용']
+    target_chembl_id [name: 'idx_chembl_target_uniprot_mappings_target_chembl_id']
+    uniprot_id [name: 'idx_chembl_target_uniprot_mappings_uniprot_id', note: 'JOIN to uniprot']
   }
 }
 
@@ -231,20 +235,99 @@ Table ncbi_ensembl {
 }
 
 // ============================================
-// KEGG Pathway
+// KEGG Pathway & Gene Network
 // ============================================
 
 Table kegg_pathway {
-  pathway_id varchar [pk, note: '734 pathways']
+  pathway_id varchar [pk, note: '734 pathways (hsa + mmu)']
   pathway_number integer [not null]
-  organism varchar [not null]
+  organism varchar [not null, note: 'hsa, mmu']
   taxon_id integer [not null, ref: > taxon.taxon_id]
   species varchar [not null]
   pathway_name varchar [not null]
-  link varchar [unique, not null]
+  link varchar [not null]
 
   indexes {
     taxon_id [name: 'idx_kegg_pathway_taxon_id']
+  }
+}
+
+Table kegg_genes {
+  gene_id varchar [pk, note: '50,809 genes (hsa:24,684 + mmu:26,125)']
+  entrez_id integer [not null, ref: > ncbi_info.entrez_id]
+  organism varchar [not null, note: 'hsa, mmu']
+  gene_type varchar [null, note: 'CDS, ncRNA, rRNA, etc']
+  chromosome varchar [null]
+  description varchar [null]
+
+  indexes {
+    entrez_id [name: 'idx_kegg_genes_entrez_id']
+    organism [name: 'idx_kegg_genes_organism']
+  }
+}
+
+Table kegg_gene_synonyms {
+  gene_id varchar [not null, ref: > kegg_genes.gene_id]
+  synonym varchar [not null, note: '166,044 synonyms (cleaned, no NaN)']
+
+  indexes {
+    gene_id [name: 'idx_kegg_gene_synonyms_gene_id']
+    synonym [name: 'idx_kegg_gene_synonyms_synonym', note: 'Lookup용']
+  }
+}
+
+Table kegg_compounds {
+  compound_id varchar [pk, note: '19,569 compounds (cpd:Cxxxxx)']
+  primary_name varchar [null]
+  description varchar [null]
+}
+
+Table kegg_compound_synonyms {
+  compound_id varchar [not null, ref: > kegg_compounds.compound_id]
+  synonym varchar [not null, note: '33,246 synonyms']
+
+  indexes {
+    compound_id [name: 'idx_kegg_compound_synonyms_compound_id']
+    synonym [name: 'idx_kegg_compound_synonyms_synonym', note: 'Lookup용']
+  }
+}
+
+Table kegg_nodes {
+  node_id varchar [pk, note: '75,861 nodes: genes(50,809) + gene_groups(4,749) + compounds(19,569) + maps(734)']
+  node_type varchar [not null, note: 'gene, compound, map']
+  organism varchar [null, note: 'null for compounds']
+
+  indexes {
+    node_type [name: 'idx_kegg_nodes_type']
+    organism [name: 'idx_kegg_nodes_organism']
+  }
+}
+
+Table kegg_edges {
+  edge_id integer [pk, increment, note: '43,139 edges from 646 pathway KGML files']
+  source_id varchar [not null, ref: > kegg_nodes.node_id]
+  source_type varchar [not null, note: 'gene, compound, map']
+  target_id varchar [not null, ref: > kegg_nodes.node_id]
+  target_type varchar [not null, note: 'gene, compound, map']
+  relation_type varchar [not null, note: 'PPrel, ECrel, GErel, PCrel, maplink']
+  relation_subtype varchar [null, note: 'activation, inhibition, binding, etc']
+  pathway_id varchar [not null, ref: > kegg_pathway.pathway_id]
+
+  indexes {
+    source_id [name: 'idx_kegg_edges_source_id']
+    target_id [name: 'idx_kegg_edges_target_id']
+    pathway_id [name: 'idx_kegg_edges_pathway_id']
+    relation_type [name: 'idx_kegg_edges_relation_type']
+  }
+}
+
+Table kegg_gene_group_members {
+  group_id varchar [not null, ref: > kegg_nodes.node_id, note: 'Gene group node_id']
+  member_gene_id varchar [not null, ref: > kegg_genes.gene_id, note: '25,885 memberships']
+
+  indexes {
+    group_id [name: 'idx_kegg_gene_group_members_group_id']
+    member_gene_id [name: 'idx_kegg_gene_group_members_member_gene_id']
   }
 }
 
@@ -270,6 +353,58 @@ Table reactome_pathway_genes {
 }
 
 // ============================================
+// Gene Ontology (GO)
+// ============================================
+
+Table go_terms {
+  go_id varchar [pk, note: '~39,000 terms (BP:25,154 + CC:4,058 + MF:10,144)']
+  aspect varchar [not null, note: 'BP (Biological Process), CC (Cellular Component), MF (Molecular Function)']
+  name varchar [not null]
+  definition varchar [null]
+
+  indexes {
+    aspect [name: 'idx_go_terms_aspect']
+  }
+}
+
+Table go_hierarchy {
+  parent_go_id varchar [not null, ref: > go_terms.go_id]
+  child_go_id varchar [not null, ref: > go_terms.go_id]
+  relation_type varchar [not null, note: 'is_a, part_of, regulates, negatively_regulates, positively_regulates']
+
+  indexes {
+    parent_go_id [name: 'idx_go_hierarchy_parent']
+    child_go_id [name: 'idx_go_hierarchy_child']
+  }
+
+  Note: '''
+  ~75,000 edges (BP:55,804 + CC:6,466 + MF:12,484)
+  DAG (Directed Acyclic Graph) structure
+  '''
+}
+
+Table go_genes {
+  go_id varchar [not null, ref: > go_terms.go_id]
+  gene_symbol varchar [not null, note: 'Gene symbol for lookup']
+  db_object_id varchar [null, note: 'UniProt ID for human, MGI ID for mouse']
+  aspect varchar [not null, note: 'F (Function), P (Process), C (Component)']
+  tax_id integer [not null, note: '9606 (human) or 10090 (mouse)']
+
+  indexes {
+    go_id [name: 'idx_go_genes_go_id']
+    gene_symbol [name: 'idx_go_genes_symbol', note: 'Lookup용']
+    db_object_id [name: 'idx_go_genes_db_object_id']
+    aspect [name: 'idx_go_genes_aspect']
+    tax_id [name: 'idx_go_genes_tax_id']
+  }
+
+  Note: '''
+  ~800,000 mappings (human:~400,000 + mouse:~400,000)
+  Deduplicated from GOA annotations
+  '''
+}
+
+// ============================================
 // DB 간 연결 (INDEX JOIN - 주석으로만 표시)
 // ============================================
 // 아래 관계들은 FK가 아니므로 Ref로 표시하지 않음
@@ -278,12 +413,17 @@ Table reactome_pathway_genes {
 // 1. Gene → Pathway 연결 (강함 ⭐⭐⭐)
 //    ncbi_ensembl.ensembl_id ⟿ reactome_pathway_genes.ensembl_id
 
-// 2. Protein → ChEMBL Target 연결 (중간 ⭐⭐ - 22% NULL)
-//    uniprot.uniprot_id ⟿ chembl_targets.uniprot_id
+// 2. Protein → ChEMBL Target 연결 (강함 ⭐⭐⭐ - normalized)
+//    uniprot.uniprot_id ⟿ chembl_target_uniprot_mappings.uniprot_id → chembl_targets.target_chembl_id
 
 // 3. Compound 간 InChI Key 연결 (약함 ⭐ - NULL, 중복)
 //    chembl_compounds.inchi_key ⟿ drugbank_drugs.inchi_key
 //    chembl_compounds.inchi_key ⟿ pubchem_compounds.inchi_key
+
+// 4. Gene → GO 연결 (중간 ⭐⭐ - gene_symbol)
+//    ncbi_info.gene_symbol ⟿ go_genes.gene_symbol
+//    uniprot.gene_symbol ⟿ go_genes.gene_symbol
+//    drugbank_targets.gene_symbol ⟿ go_genes.gene_symbol
 
 // ============================================
 // 연결 경로 요약
@@ -296,6 +436,7 @@ Table reactome_pathway_genes {
 //   - chembl_compounds → chembl_drug_target_relations (1:N)
 //   - chembl_diseases → chembl_drug_disease_relations (1:N)
 //   - chembl_targets → chembl_target_synonyms (1:N)
+//   - chembl_targets → chembl_target_uniprot_mappings (1:N) ⭐ NORMALIZED
 //   - chembl_targets → chembl_drug_target_relations (1:N)
 //
 // DrugBank:
@@ -310,24 +451,42 @@ Table reactome_pathway_genes {
 //   - ncbi_info → ncbi_synonyms (1:N)
 //   - ncbi_info ↔ ncbi_ensembl (1:1 FK)
 //
+// KEGG:
+//   - kegg_genes → kegg_gene_synonyms (1:N)
+//   - kegg_genes → kegg_gene_group_members (1:N)
+//   - kegg_compounds → kegg_compound_synonyms (1:N)
+//   - kegg_nodes → kegg_edges (1:N as source/target)
+//   - kegg_pathway → kegg_edges (1:N)
+//   - ncbi_info (entrez_id) → kegg_genes (entrez_id) ⭐ FK
+//
 // Reactome:
 //   - reactome_pathway → reactome_pathway_genes (1:N)
+//
+// GO (Gene Ontology):
+//   - go_terms → go_hierarchy (1:N as parent/child)
+//   - go_terms → go_genes (1:N)
 
 // [DB 간 분석 경로]
-// 1. Gene → Pathway:
-//    ncbi_info (entrez_id) → ncbi_ensembl (ensembl_id) ⟿ reactome_pathway_genes → reactome_pathway
+// 1. Gene → Pathway (Multiple pathways):
+//    A. KEGG: ncbi_info (entrez_id) → kegg_genes → kegg_nodes (gene) → kegg_edges → kegg_pathway
+//    B. Reactome: ncbi_info (entrez_id) → ncbi_ensembl (ensembl_id) ⟿ reactome_pathway_genes → reactome_pathway
 //
 // 2. Protein → DrugBank Drug:
 //    uniprot (uniprot_id) = drugbank_targets (uniprot_id) → drugbank_drug_target_relations → drugbank_drugs
 //
-// 3. Protein → ChEMBL Compound:
-//    uniprot (uniprot_id) ⟿ chembl_targets (uniprot_id, 22% NULL) → chembl_drug_target_relations → chembl_compounds
+// 3. Protein → ChEMBL Compound (normalized):
+//    uniprot (uniprot_id) ⟿ chembl_target_uniprot_mappings → chembl_targets → chembl_drug_target_relations → chembl_compounds
 //
 // 4. Compound 매칭 (확률적):
 //    chembl_compounds (inchi_key) ⟿ drugbank_drugs (inchi_key) ⟿ pubchem_compounds (inchi_key)
 //
 // 5. Gene Symbol 매칭:
 //    uniprot (gene_symbol) ⟿ ncbi_info (gene_symbol) ⟿ drugbank_targets (gene_symbol)
+//
+// 6. Gene → GO Annotation:
+//    A. From NCBI: ncbi_info (gene_symbol) ⟿ go_genes → go_terms (BP/CC/MF)
+//    B. From UniProt: uniprot (gene_symbol) ⟿ go_genes → go_terms (BP/CC/MF)
+//    C. GO Hierarchy: go_terms ← go_hierarchy (parent/child) → go_terms
 //
 // 범례:
 //   → : FK 관계 (강함)
