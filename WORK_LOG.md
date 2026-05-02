@@ -1,5 +1,45 @@
 # DB 프로젝트 작업 로그
 
+---
+
+## 2026-05-02 — DB 구축 완료
+
+### 작업 요약
+- 폴더 구조 재편 (`scripts/`, `db-script/` → `1_download/`, `2_process/`, `3_load/`)
+- 경로 중앙화: `config.yaml` + `paths.py` 도입, 전체 스크립트 하드코딩 제거
+- 전체 스크립트 디버그 및 경로 수정
+- 31개 테이블 DB 적재 완료 (0 row 테이블 없음)
+
+### 변경 사항
+
+#### 폴더 구조
+```
+구조 전: scripts/{소스}/    db-script/
+구조 후: 1_download/  2_process/  3_load/
+```
+
+#### 경로 중앙화
+- `config.yaml`: raw/processed 경로 전부 정의
+- `paths.py`: config.yaml 로드 → `DB_FILE`, `RAW_*`, `PROC_*` Path 객체 export
+- 모든 스크립트: `sys.path.insert(0, parent.parent.parent)` + `from paths import ...`
+
+#### 버그 수정
+| 파일 | 수정 내용 |
+|------|----------|
+| `2_process/Drugbank/get_drug_target_information.py` | output 경로 `target_information/`으로 수정, `gene_symbol` 컬럼명 통일 |
+| `2_process/Kegg/normalize_kegg_mapping.py` | 잔존 `BASE_DIR` 참조 → `PROC_KEGG` |
+| `3_load/schema/create_schema.py` | 경로 수정, `DB_FILE.parent.mkdir` 추가 |
+| `3_load/schema/database_schema.sql` | 모든 `CREATE TABLE/INDEX` → `IF NOT EXISTS` 추가 |
+| `3_load/Reactome/import_reactome_to_db.py` | 파일명 `all_pathway.csv` → `pathway.csv` 수정 |
+| `3_load/schema/database_schema.sql` | `reactome_pathway_genes`에 `evidence_code TEXT` 컬럼 추가 |
+
+### 최종 DB 현황
+- 파일: `database/database.db`
+- 테이블: 31개, 0 row 테이블 없음
+- PubChem만 compounds 1.2억 / synonyms 1.1억 rows
+
+---
+
 ## 2026-01-04 (토) - DrugBank 스크립트 변환 완료
 
 ### 📋 작업 요약
@@ -11,7 +51,7 @@ DrugBank 데이터베이스 추출 스크립트 생성 (Jupyter Notebook → Pyt
 
 ### 1. DrugBank Drug Information 추출
 **작업**: Jupyter notebook을 Python 스크립트로 변환 및 경로 수정
-**스크립트**: `scripts/Drugbank/get_drug_information.py`
+**스크립트**: `2_process/Drugbank/get_drug_information.py`
 **파일**: `processed/Drugbank/drug_information/drug_information.csv`
 
 **결과**:
@@ -43,7 +83,7 @@ description    7,405     42.48%
 
 ### 2. DrugBank Drug-Target Relationship 추출
 **작업**: Jupyter notebook을 Python 스크립트로 변환 및 경로 수정
-**스크립트**: `scripts/Drugbank/get_drug_target_information.py`
+**스크립트**: `2_process/Drugbank/get_drug_target_information.py`
 **파일**:
 - `processed/Drugbank/drug-target_information/drug_in_target.csv`
 - `processed/Drugbank/drug-target_information/target_information.csv`
@@ -183,7 +223,7 @@ ChEMBL 데이터베이스 추출 작업 완료 및 PubChem 데이터 정리
 ### 1. ChEMBL Compound-Disease 관계 추출
 **문제**: compound-disease 데이터가 12월 25일 버전으로 오래됨
 **해결**:
-- `scripts/Chembl/get_compound_disease.py` 스크립트 생성
+- `2_process/Chembl/get_compound_disease.py` 스크립트 생성
 - 최신 데이터로 재추출 (2026-01-03 23:06)
 - 파일: `processed/Chembl/compound-disease/compound-disease_information.csv`
 
@@ -195,7 +235,7 @@ ChEMBL 데이터베이스 추출 작업 완료 및 PubChem 데이터 정리
 
 ### 2. ChEMBL Target-GO Term 매핑 추출
 **작업**: Target의 Gene Ontology term 매핑 데이터 추출
-**스크립트**: `scripts/Chembl/get_target_go.py`
+**스크립트**: `2_process/Chembl/get_target_go.py`
 **파일**:
 - `processed/Chembl/target-go/target_go_terms.csv` (34 MB)
 - `processed/Chembl/target-go/target_go_summary.csv` (1.1 MB)
@@ -218,7 +258,7 @@ ChEMBL 데이터베이스 추출 작업 완료 및 PubChem 데이터 정리
 ### 3. PubChem 데이터 재정리
 **문제**: 노트북으로 처리한 데이터, 컬럼명 불일치 (pudchem 오타)
 **해결**:
-- `scripts/PudChem/get_pubchem_compound.py` 스크립트 생성
+- `2_process/PubChem/get_pubchem_compound.py` 스크립트 생성
 - snake_case 컬럼명으로 통일
 - 구버전 파일 삭제
 
@@ -271,7 +311,7 @@ processed/PubChem/
 
 ## 🔧 생성된 스크립트
 
-### ChEMBL 추출 스크립트 (scripts/Chembl/)
+### ChEMBL 추출 스크립트 (2_process/Chembl/)
 1. `get_chembl_compound.py` - 화합물 정보
 2. `get_chembl_target.py` - 타겟 정보
 3. `get_chembl_disease.py` - 질병 정보
@@ -279,7 +319,7 @@ processed/PubChem/
 5. `get_drug_target.py` - 화합물-타겟 관계
 6. `get_target_go.py` - 타겟-GO term 매핑 ✨ NEW
 
-### PubChem 추출 스크립트 (scripts/PudChem/)
+### PubChem 추출 스크립트 (2_process/PubChem/)
 1. `get_pubchem_compound.py` - 화합물 및 synonyms ✨ NEW
 
 ---
@@ -359,7 +399,7 @@ processed/PubChem/
 ---
 
 ## 📝 참고 문서
-- ChEMBL 가이드: `scripts/Chembl/CLAUDE.md`
+- ChEMBL 가이드: `2_process/Chembl/CLAUDE.md`
 - ChEMBL 버전: v36
 - 데이터베이스 위치: `raw/chembl/chembl_36/chembl_36_sqlite/chembl_36.db` (28GB)
 

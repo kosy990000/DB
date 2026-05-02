@@ -1,0 +1,26 @@
+database: "database/database.db"
+
+raw:
+  chembl_db: "raw/Chembl/chembl_36/chembl_36_sqlite/chembl_36.db"
+  drugbank_xml: "raw/Drugbank/full database.xml"
+  go: "raw/Go"
+  kegg:
+    mapping: "raw/Kegg/kegg-mapping"
+    kgml_hsa: "raw/Kegg/kgml_hsa"
+    kgml_mmu: "raw/Kegg/kgml_mmu"
+  ncbi: "raw/NCBI"
+  pubchem: "raw/PubChem"
+  reactome: "raw/Reactome"
+  uniprot: "raw/Uniprot"
+  gene_mapping: "raw/Gene_mapping"
+
+processed:
+  chembl: "processed/Chembl"
+  drugbank: "processed/Drugbank"
+  gene_mapping: "processed/Gene_mapping"
+  go: "processed/Go"
+  kegg: "processed/Kegg"
+  ncbi: "processed/NCBI"
+  pubchem: "processed/PubChem"
+  reactome: "processed/Reactome"
+  uniprot: "processed/Uniprot"

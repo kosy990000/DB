@@ -25,7 +25,7 @@ path:hsa00061, map, path:hsa00062, map, maplink, compound, hsa00020, Citrate cyc
 - `maplink`: Pathway 간 연결 또는 gene-pathway 연결
 
 ### 2. KEGG Gene Mapping
-**위치:** `raw/kegg/kegg-mapping/`
+**위치:** `raw/Kegg/kegg-mapping/`
 
 **파일:**
 - `hsa_gene_mapping.csv`: 24,684 genes
@@ -45,7 +45,7 @@ hsa:101954268, 101954268, hsa, RNVU1-20
 ```
 
 ### 3. KEGG Compound Mapping
-**위치:** `raw/kegg/kegg-mapping/`
+**위치:** `raw/Kegg/kegg-mapping/`
 
 **파일:**
 - `compound_mapping.csv`: 19,569 compounds
