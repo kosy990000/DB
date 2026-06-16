@@ -157,8 +157,8 @@ def download_compound_list():
 
     # Save compound mapping
     df_compounds = pd.DataFrame(compound_data)
-    compound_output_file = os.path.join(output_dir, "compound_mapping.csv")
-    df_compounds.to_csv(compound_output_file, index=False)
+    compound_output_file = output_dir / "compound_mapping.csv"
+    df_compounds.to_csv(str(compound_output_file), index=False)
 
     print(f"Saved {len(df_compounds)} compounds to {compound_output_file}")
     print(f"Compound mapping columns: {list(df_compounds.columns)}")
@@ -166,8 +166,8 @@ def download_compound_list():
 
     # Save compound synonyms
     df_synonyms = pd.DataFrame(synonym_data)
-    synonym_output_file = os.path.join(output_dir, "compound_synonyms.csv")
-    df_synonyms.to_csv(synonym_output_file, index=False)
+    synonym_output_file = output_dir / "compound_synonyms.csv"
+    df_synonyms.to_csv(str(synonym_output_file), index=False)
 
     print(f"Saved {len(df_synonyms)} compound synonyms to {synonym_output_file}")
     print(f"Synonym columns: {list(df_synonyms.columns)}")

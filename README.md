@@ -13,9 +13,16 @@ DB/
 ├── paths.py             # config.yaml 로드 → Path 객체 제공 (스크립트에서 import)
 │
 ├── 1_download/          # 외부 API / FTP에서 원본 데이터 다운로드
-│   └── Kegg/
-│       ├── download_kgml.py       # KEGG KGML 파일 다운로드
-│       └── download_mapping.py    # KEGG 유전자 매핑 다운로드
+│   ├── _common.py                 # 공통 다운로드 헬퍼 (progress/resume/skip)
+│   ├── download_all.py            # 전체 소스 일괄 다운로드
+│   ├── Chembl/        # ChEMBL SQLite tarball (~30GB)
+│   ├── Drugbank/      # DrugBank XML (계정 인증 필요)
+│   ├── Go/            # go-basic.obo + GOA(.gaf)
+│   ├── Kegg/          # KEGG KGML + 매핑
+│   ├── NCBI/          # gene_info.gz
+│   ├── PubChem/       # CID-* 4종 (~48GB)
+│   ├── Reactome/      # NCBI2Reactome_All_Levels.txt
+│   └── Uniprot/       # HUMAN/MOUSE idmapping
 │
 ├── 2_process/           # 원본 데이터 → 정형 CSV 변환
 │   ├── Chembl/          # ChEMBL v36 SQLite 추출
@@ -80,9 +87,10 @@ conda run -n kg_env python3 -c "from paths import *; print(RAW_CHEMBL_DB)"
 
 ### 스크립트 실행 (프로젝트 루트에서)
 ```bash
-# 1. KEGG 데이터 다운로드
-conda run -n kg_env python3 1_download/Kegg/download_mapping.py
-conda run -n kg_env python3 1_download/Kegg/download_kgml.py
+# 1. 데이터 다운로드 (전체 일괄, ChEMBL/PubChem 제외)
+conda run -n kg_env python3 1_download/download_all.py
+# 무거운 소스까지: --all / 특정 소스만: download_all.py go reactome
+# 자세한 내용은 1_download/README.md 참고
 
 # 2. 데이터 처리
 conda run -n kg_env python3 2_process/Kegg/normalize_kegg_mapping.py
