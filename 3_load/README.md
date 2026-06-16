@@ -41,22 +41,22 @@
 
 ```bash
 # 0. 스키마 생성 (최초 1회 또는 스키마 변경 시)
-conda run -n kg_env python3 3_load/schema/create_schema.py
+conda run -n DB python3 3_load/schema/create_schema.py
 
 # 1. Taxon (FK 기준 테이블, 가장 먼저)
-conda run -n kg_env python3 3_load/Common/import_taxon_to_db.py
+conda run -n DB python3 3_load/Common/import_taxon_to_db.py
 
 # 2. 독립 테이블 (순서 무관)
-conda run -n kg_env python3 3_load/NCBI/import_ncbi_to_db.py
-conda run -n kg_env python3 3_load/Uniprot/import_uniprot_to_db.py
-conda run -n kg_env python3 3_load/Chembl/import_chembl_to_db.py
-conda run -n kg_env python3 3_load/Drugbank/import_drugbank_to_db.py
-conda run -n kg_env python3 3_load/Go/import_go_to_db.py
-conda run -n kg_env python3 3_load/Kegg/import_kegg_to_db.py
-conda run -n kg_env python3 3_load/Reactome/import_reactome_to_db.py
+conda run -n DB python3 3_load/NCBI/import_ncbi_to_db.py
+conda run -n DB python3 3_load/Uniprot/import_uniprot_to_db.py
+conda run -n DB python3 3_load/Chembl/import_chembl_to_db.py
+conda run -n DB python3 3_load/Drugbank/import_drugbank_to_db.py
+conda run -n DB python3 3_load/Go/import_go_to_db.py
+conda run -n DB python3 3_load/Kegg/import_kegg_to_db.py
+conda run -n DB python3 3_load/Reactome/import_reactome_to_db.py
 
 # 3. PubChem (데이터 크기 23GB+, 오래 걸림)
-conda run -n kg_env python3 3_load/PubChem/import_pubchem_to_db.py
+conda run -n DB python3 3_load/PubChem/import_pubchem_to_db.py
 ```
 
 > **주의**: SQLite는 동시 쓰기를 지원하지 않음. 스크립트를 병렬 실행하면 `database is locked` 오류 발생.

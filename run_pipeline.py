@@ -16,7 +16,7 @@ Usage (from project root):
 Notes:
     - Heavy sources (ChEMBL ~30GB, PubChem ~48GB) are skipped unless --all.
     - DrugBank download needs DRUGBANK_EMAIL / DRUGBANK_PASSWORD env vars.
-    - Use 'conda run -n kg_env python run_pipeline.py ...' to run in the env.
+    - Use 'conda run -n DB python run_pipeline.py ...' to run in the env.
 """
 import subprocess
 import sys

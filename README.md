@@ -77,29 +77,35 @@ DB/
 
 ### 환경
 ```bash
-conda activate kg_env   # Python 환경
+# conda
+conda env create -f environment.yml
+conda activate DB
+
+# 또는 Docker
+docker build -t db .
+docker run --rm -it -v $PWD:/work db
 ```
 
 ### 경로 설정 확인
 ```bash
-conda run -n kg_env python3 -c "from paths import *; print(RAW_CHEMBL_DB)"
+conda run -n DB python3 -c "from paths import *; print(RAW_CHEMBL_DB)"
 ```
 
 ### 스크립트 실행 (프로젝트 루트에서)
 ```bash
 # 1. 데이터 다운로드 (전체 일괄, ChEMBL/PubChem 제외)
-conda run -n kg_env python3 1_download/download_all.py
+conda run -n DB python3 1_download/download_all.py
 # 무거운 소스까지: --all / 특정 소스만: download_all.py go reactome
 # 자세한 내용은 1_download/README.md 참고
 
 # 2. 데이터 처리
-conda run -n kg_env python3 2_process/Kegg/normalize_kegg_mapping.py
-conda run -n kg_env python3 2_process/Chembl/get_chembl_compound.py
+conda run -n DB python3 2_process/Kegg/normalize_kegg_mapping.py
+conda run -n DB python3 2_process/Chembl/get_chembl_compound.py
 
 # 3. DB 적재 (순서 중요: taxon 먼저, PubChem 마지막)
-conda run -n kg_env python3 3_load/schema/create_schema.py
-conda run -n kg_env python3 3_load/Common/import_taxon_to_db.py
-conda run -n kg_env python3 3_load/Chembl/import_chembl_to_db.py
+conda run -n DB python3 3_load/schema/create_schema.py
+conda run -n DB python3 3_load/Common/import_taxon_to_db.py
+conda run -n DB python3 3_load/Chembl/import_chembl_to_db.py
 ```
 
 > 적재 전체 순서는 `3_load/README.md` 참고.

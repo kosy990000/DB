@@ -1,0 +1,15 @@
+# 생물정보학 지식그래프 DB 파이프라인 실행 환경
+# 생성: conda env create -f environment.yml
+# 사용: conda activate DB
+name: DB
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pandas=2.3.3
+  - numpy=2.0.1
+  - networkx=3.4.2
+  - requests=2.32.5
+  - tqdm=4.67.1
+  - pyyaml=6.0.3

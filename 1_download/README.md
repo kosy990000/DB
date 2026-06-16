@@ -28,7 +28,7 @@
 ## 빠른 시작
 
 ```bash
-conda activate kg_env   # 또는 conda run -n kg_env ...
+conda activate DB   # 또는 conda run -n DB ...
 
 # 가벼운 소스 전체 (ChEMBL/PubChem 제외)
 python 1_download/download_all.py
